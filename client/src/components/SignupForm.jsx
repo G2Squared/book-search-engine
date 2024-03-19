@@ -1,26 +1,32 @@
-import { useState } from 'react';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { useState } from 'react'; // Importing useState hook from React
+import { Form, Button, Alert } from 'react-bootstrap'; // Importing form-related components from React Bootstrap
 
-import { createUser } from '../utils/API';
+// Importing authentication utility functions and GraphQL mutation
 import Auth from '../utils/auth';
+import { ADD_USER } from '../utils/mutations';
+import { useMutation } from '@apollo/client';
 
+// Functional component for signup form
 const SignupForm = () => {
-  // set initial form state
+  // State variables for user form data, form validation, and alert visibility
   const [userFormData, setUserFormData] = useState({ username: '', email: '', password: '' });
-  // set state for form validation
   const [validated] = useState(false);
-  // set state for alert
   const [showAlert, setShowAlert] = useState(false);
 
+  // GraphQL mutation for adding a new user
+  const [addUser, { error, data }] = useMutation(ADD_USER);
+
+  // Function to handle input changes in the form fields
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     setUserFormData({ ...userFormData, [name]: value });
   };
 
+  // Function to handle form submission
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
-    // check if form has everything (as per react-bootstrap docs)
+    // Check form validation status
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
       event.preventDefault();
@@ -28,20 +34,20 @@ const SignupForm = () => {
     }
 
     try {
-      const response = await createUser(userFormData);
+      // Call the addUser mutation with user form data
+      const { data } = await addUser({
+        variables: { ...userFormData },
+      });
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      const { token, user } = await response.json();
-      console.log(user);
-      Auth.login(token);
+      // If signup is successful, set user token in local storage
+      Auth.login(data.addUser.token);
     } catch (err) {
       console.error(err);
+      // Show alert if signup fails
       setShowAlert(true);
     }
 
+    // Reset form data
     setUserFormData({
       username: '',
       email: '',
@@ -49,15 +55,16 @@ const SignupForm = () => {
     });
   };
 
+  // Rendering the signup form
   return (
     <>
-      {/* This is needed for the validation functionality above */}
+      {/* Form element with validation and submission handlers */}
       <Form noValidate validated={validated} onSubmit={handleFormSubmit}>
-        {/* show alert if server response is bad */}
+        {/* Alert for displaying signup error */}
         <Alert dismissible onClose={() => setShowAlert(false)} show={showAlert} variant='danger'>
           Something went wrong with your signup!
         </Alert>
-
+        {/* Username input field */}
         <Form.Group className='mb-3'>
           <Form.Label htmlFor='username'>Username</Form.Label>
           <Form.Control
@@ -70,7 +77,7 @@ const SignupForm = () => {
           />
           <Form.Control.Feedback type='invalid'>Username is required!</Form.Control.Feedback>
         </Form.Group>
-
+        {/* Email input field */}
         <Form.Group className='mb-3'>
           <Form.Label htmlFor='email'>Email</Form.Label>
           <Form.Control
@@ -83,7 +90,7 @@ const SignupForm = () => {
           />
           <Form.Control.Feedback type='invalid'>Email is required!</Form.Control.Feedback>
         </Form.Group>
-
+        {/* Password input field */}
         <Form.Group className='mb-3'>
           <Form.Label htmlFor='password'>Password</Form.Label>
           <Form.Control
@@ -96,6 +103,7 @@ const SignupForm = () => {
           />
           <Form.Control.Feedback type='invalid'>Password is required!</Form.Control.Feedback>
         </Form.Group>
+        {/* Submit button */}
         <Button
           disabled={!(userFormData.username && userFormData.email && userFormData.password)}
           type='submit'
@@ -107,4 +115,4 @@ const SignupForm = () => {
   );
 };
 
-export default SignupForm;
+export default SignupForm; // Exporting the SignupForm component
