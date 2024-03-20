@@ -1,3 +1,4 @@
+import {gql} from '@apollo/client'
 // Define a GraphQL mutation for logging in a user
 // This mutation takes email and password as input parameters
 // It returns a token and user information if the login is successful
